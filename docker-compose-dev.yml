@@ -1,0 +1,60 @@
+#####
+# Docker compose YAML file
+#
+# For documentation see: https://docs.docker.com/compose/yml/
+#####
+
+version: "3"
+
+volumes:
+    psql-data-dev: {}
+    staticfiles:
+    media-files:
+    
+    
+services:
+    ub-db-dev:
+        image: postgres:9.6
+        volumes:
+            # - /opt/starter/psql:/var/lib/postgresql/data/pgdata
+            - ./psql-data-dev:/var/lib/postgresql/data
+        env_file:
+            - ./config/environment/development_local.env
+    webapp-dev:
+        build:
+            context: webapp
+            dockerfile: Dockerfile-dev
+        volumes:
+            # - ./webapp/starter/staticfiles:/srv/static-files
+            # - static-files:/srv/static-files
+            - ./webapp/starter/staticfiles:/srv/starter/staticfiles
+            - media-files:/srv/media-files
+            - ./webapp/starter:/srv/starter
+        expose:
+            - "8000"
+        depends_on:
+            - ub-db-dev
+        env_file:
+            - ./config/environment/development_local.env
+        restart: always
+        # healthcheck:
+        #     - test: ["CMD", "curl", "-f", "http:localhost:8000"]
+        #     - interval: 30s
+        #     - timeout: 10s
+        #     - retries: 5
+
+    webserver-dev:
+        build:
+            context: .
+            dockerfile: services/webserver/Dockerfile-dev
+        ports:
+            - "80:80"
+            - "443:443"
+        depends_on:
+            - webapp-dev
+        volumes:
+            - ./webapp/starter/staticfiles:/srv/starter/staticfiles
+            - media-files:/srv/media-files
+        env_file:
+            - ./config/environment/development_local.env
+        restart: always
